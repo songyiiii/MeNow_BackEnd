@@ -32,6 +32,10 @@ const User = (sequelize) => {
       type: DataTypes.ENUM('user', 'company'),
       allowNull: false,
     },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   });
 };
 
