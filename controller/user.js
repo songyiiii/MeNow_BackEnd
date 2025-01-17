@@ -8,14 +8,19 @@ const { User } = db;
 // 회원가입
 export const register = async (req, res) => {
   try {
-    const { email, name, password, gender, role } = req.body;
-    console.log('Received data:', req.body);
+    const { email, name, password, gender, role, nickname, phone } = req.body;
 
     const user = await User.findOne({ where: { email } });
     if (user) {
       return res
         .status(400)
         .json({ result: false, message: '이미 존재하는 회원입니다.' });
+    }
+    const existingNickname = await User.findOne({ where: { nickname } });
+    if (existingNickname) {
+      return res
+        .status(401)
+        .json({ result: false, message: '중복된 닉네임입니다.' });
     }
     const encryption = await bcrypt.hash(password, 10);
     const addUser = await User.create({
@@ -24,6 +29,8 @@ export const register = async (req, res) => {
       password: encryption,
       role,
       gender,
+      nickname,
+      phone,
     });
     res.status(200).json({
       result: true,
@@ -66,16 +73,9 @@ export const login = async (req, res) => {
       id: user.id,
       email: user.email,
       name: user.name,
-      phone: user.phone,
       role: user.role,
+      nickname: user.nickname,
     };
-
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000, // 1일
-    });
 
     return res.status(200).json({
       message: '로그인 성공',
@@ -92,7 +92,7 @@ export const login = async (req, res) => {
 };
 
 export const getUser = async (req, res) => {
-  const token = req.cookies.token;
+
   if (!token) {
     return res.status(400).json({
       message: '로그인을 해주세요',
@@ -100,7 +100,17 @@ export const getUser = async (req, res) => {
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    return res.status(200).json({ id: decoded.id, email: decoded.email });
+    const user = await User.findOne({
+      where: { id: decoded.user.id },
+      attributes: ['email', 'name', 'phone', 'role', 'nickname'],
+    });
+    if (!user) {
+      return res.status(404).json({
+        result: false,
+        message: '사용자를 찾을 수 없습니다.',
+      });
+    }
+    return res.status(200).json(user);
   } catch (error) {
     console.error('JWT검증 실패', error);
     return res.status(401).json({ message: '유효하지 않은 토큰입니다' });

@@ -19,6 +19,7 @@ const User = (sequelize) => {
     email: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
     password: {
       type: DataTypes.STRING,
@@ -35,6 +36,11 @@ const User = (sequelize) => {
     phone: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    nickname: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
     },
   });
 };
